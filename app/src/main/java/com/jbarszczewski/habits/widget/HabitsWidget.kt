@@ -197,17 +197,22 @@ private fun EmptyState() {
     }
 }
 
-/** A rounded "card" wrapper shared by both row kinds: outer margin, tonal fill, inner padding. */
+/**
+ * A rounded "card" wrapper shared by both row kinds: outer margin, tonal fill, inner padding.
+ * A fixed height keeps a one-line checkbox row and a two-line timed row the same size; content
+ * is centered vertically within it via the Row's [Alignment.CenterVertically].
+ */
 @Composable
 private fun TaskCard(onClick: androidx.glance.action.Action, content: @Composable androidx.glance.layout.RowScope.() -> Unit) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 6.dp)
+            .height(64.dp)
             .background(GlanceTheme.colors.surfaceVariant)
             .cornerRadius(16.dp)
             .clickable(onClick)
-            .padding(12.dp),
+            .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         content()
