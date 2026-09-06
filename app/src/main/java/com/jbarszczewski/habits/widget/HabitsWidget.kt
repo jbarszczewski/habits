@@ -6,16 +6,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.glance.Button
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.CheckBox
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
@@ -32,10 +34,13 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.jbarszczewski.habits.AppContainer
 import com.jbarszczewski.habits.HabitsApplication
 import com.jbarszczewski.habits.MainActivity
@@ -116,18 +121,13 @@ private fun WidgetContent(today: LocalDate, items: List<TaskWithCompletion>, now
             .fillMaxSize()
             .background(GlanceTheme.colors.widgetBackground)
             .appWidgetBackground()
-            .cornerRadius(16.dp)
-            .padding(12.dp),
+            .cornerRadius(20.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        Header(today)
-        Spacer(GlanceModifier.height(8.dp))
+        Header(today, items)
+        Spacer(GlanceModifier.height(10.dp))
         if (items.isEmpty()) {
-            Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = LocalContext.current.getString(R.string.today_empty),
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
-                )
-            }
+            EmptyState()
         } else {
             LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
                 items(items, itemId = { it.task.id }) { item ->
@@ -143,38 +143,124 @@ private fun WidgetContent(today: LocalDate, items: List<TaskWithCompletion>, now
 }
 
 @Composable
-private fun Header(today: LocalDate) {
+private fun Header(today: LocalDate, items: List<TaskWithCompletion>) {
+    val doneCount = items.count { it.completion?.status == CompletionStatus.DONE }
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
             .clickable(actionStartActivity<MainActivity>()),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Text(
+                text = LocalContext.current.getString(R.string.today_title),
+                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold),
+            )
+            Text(
+                text = today.format(HEADER_DATE),
+                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
+            )
+        }
+        if (items.isNotEmpty()) {
+            ProgressPill(doneCount, items.size)
+        }
+    }
+}
+
+/** Small rounded "2/3" badge summarising today's progress at a glance. */
+@Composable
+private fun ProgressPill(done: Int, total: Int) {
+    Box(
+        modifier = GlanceModifier
+            .background(GlanceTheme.colors.primaryContainer)
+            .cornerRadius(999.dp)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
         Text(
-            text = LocalContext.current.getString(R.string.today_title),
-            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+            text = "$done/$total",
+            style = TextStyle(
+                color = GlanceTheme.colors.onPrimaryContainer,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+            ),
         )
-        Spacer(GlanceModifier.width(8.dp))
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
-            text = today.format(HEADER_DATE),
-            style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
+            text = LocalContext.current.getString(R.string.today_empty),
+            style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
         )
+    }
+}
+
+/** A rounded "card" wrapper shared by both row kinds: outer margin, tonal fill, inner padding. */
+@Composable
+private fun TaskCard(onClick: androidx.glance.action.Action, content: @Composable androidx.glance.layout.RowScope.() -> Unit) {
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .background(GlanceTheme.colors.surfaceVariant)
+            .cornerRadius(16.dp)
+            .clickable(onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        content()
     }
 }
 
 @Composable
 private fun CheckboxRow(item: TaskWithCompletion) {
     val done = item.completion?.status == CompletionStatus.DONE
-    CheckBox(
-        checked = done,
-        onCheckedChange = actionRunCallback<ToggleDoneAction>(
-            actionParametersOf(WidgetActionKeys.taskId to item.task.id)
-        ),
-        text = item.task.name,
-        style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp),
-        modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
-        maxLines = 1,
-    )
+    val toggle = actionRunCallback<ToggleDoneAction>(actionParametersOf(WidgetActionKeys.taskId to item.task.id))
+
+    TaskCard(onClick = toggle) {
+        StatusDot(done = done)
+        Spacer(GlanceModifier.width(10.dp))
+        Text(
+            text = item.task.name,
+            style = TextStyle(
+                color = if (done) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                textDecoration = if (done) TextDecoration.LineThrough else TextDecoration.None,
+            ),
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+    }
+}
+
+/** A filled circle with a checkmark when done, or a plain ring when not: replaces the stock checkbox. */
+@Composable
+private fun StatusDot(done: Boolean) {
+    if (done) {
+        Box(
+            modifier = GlanceModifier.size(22.dp).background(GlanceTheme.colors.primary).cornerRadius(11.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                provider = ImageProvider(R.drawable.ic_widget_check),
+                contentDescription = null,
+                modifier = GlanceModifier.size(12.dp),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimary),
+            )
+        }
+    } else {
+        // Ring effect: an outer tinted circle with a smaller inset circle painted in the card's
+        // own background colour on top, since Glance modifiers have no direct "border" primitive.
+        Box(
+            modifier = GlanceModifier.size(22.dp).background(GlanceTheme.colors.outline).cornerRadius(11.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(modifier = GlanceModifier.size(18.dp).background(GlanceTheme.colors.surfaceVariant).cornerRadius(9.dp)) {}
+        }
+    }
 }
 
 @Composable
@@ -186,27 +272,56 @@ private fun TimedRow(item: TaskWithCompletion, nowMillis: Long) {
     // Minutes already saved today plus whatever the running timer has accumulated so far.
     val liveMinutes = (item.completion?.actualMinutes ?: 0) +
         (startedAt?.let { HabitRepository.elapsedWholeMinutes(it, nowMillis) } ?: 0)
+    val progress = (liveMinutes.toFloat() / target).coerceIn(0f, 1f)
+    val toggleTimer = actionRunCallback<ToggleTimerAction>(actionParametersOf(WidgetActionKeys.taskId to item.task.id))
 
-    Row(
-        modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    TaskCard(onClick = actionStartActivity<MainActivity>()) {
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
                 text = item.task.name,
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp),
+                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium),
                 maxLines = 1,
             )
-            Text(
-                text = context.getString(R.string.today_minutes_progress, liveMinutes, target),
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
-            )
+            Spacer(GlanceModifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = GlanceModifier.width(56.dp).height(4.dp).cornerRadius(2.dp),
+                    color = GlanceTheme.colors.primary,
+                    backgroundColor = GlanceTheme.colors.outline,
+                )
+                Spacer(GlanceModifier.width(6.dp))
+                Text(
+                    text = context.getString(R.string.today_minutes_progress, liveMinutes, target),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 11.sp),
+                )
+            }
         }
-        Button(
-            text = context.getString(if (running) R.string.widget_stop else R.string.widget_start),
-            onClick = actionRunCallback<ToggleTimerAction>(
-                actionParametersOf(WidgetActionKeys.taskId to item.task.id)
+        Spacer(GlanceModifier.width(8.dp))
+        TimerButton(running = running, onClick = toggleTimer)
+    }
+}
+
+/** Small round icon button: primary-filled play when stopped, error-tinted stop when running. */
+@Composable
+private fun TimerButton(running: Boolean, onClick: androidx.glance.action.Action) {
+    val container: ColorProvider = if (running) GlanceTheme.colors.errorContainer else GlanceTheme.colors.primary
+    val onContainer: ColorProvider = if (running) GlanceTheme.colors.onErrorContainer else GlanceTheme.colors.onPrimary
+    Box(
+        modifier = GlanceModifier
+            .size(36.dp)
+            .background(container)
+            .cornerRadius(18.dp)
+            .clickable(onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            provider = ImageProvider(if (running) R.drawable.ic_widget_stop else R.drawable.ic_widget_play),
+            contentDescription = LocalContext.current.getString(
+                if (running) R.string.widget_stop else R.string.widget_start
             ),
+            modifier = GlanceModifier.size(16.dp),
+            colorFilter = ColorFilter.tint(onContainer),
         )
     }
 }
