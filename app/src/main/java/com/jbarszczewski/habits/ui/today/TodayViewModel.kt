@@ -5,18 +5,25 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.jbarszczewski.habits.BuildConfig
 import com.jbarszczewski.habits.HabitsApplication
 import com.jbarszczewski.habits.data.DateProvider
 import com.jbarszczewski.habits.data.HabitRepository
 import com.jbarszczewski.habits.data.TaskWithCompletion
+import com.jbarszczewski.habits.update.UpdateChecker
+import com.jbarszczewski.habits.update.UpdateInfo
+import com.jbarszczewski.habits.update.isNewerVersion
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 data class TodayUiState(
@@ -32,6 +39,8 @@ data class TodayUiState(
 class TodayViewModel(
     private val repository: HabitRepository,
     private val dateProvider: DateProvider,
+    private val updateChecker: UpdateChecker,
+    private val currentVersionName: String,
 ) : ViewModel() {
 
     /**
@@ -39,6 +48,25 @@ class TodayViewModel(
      * app is resumed after midnight (see [refreshDate]).
      */
     private val date = MutableStateFlow(dateProvider.today())
+
+    private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
+
+    /** Non-null once a newer GitHub release than [currentVersionName] is found. Checked once per app start. */
+    val updateInfo: StateFlow<UpdateInfo?> = _updateInfo.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val release = runCatching { withContext(Dispatchers.IO) { updateChecker.latestRelease() } }
+                .getOrNull() ?: return@launch
+            if (isNewerVersion(currentVersionName, release.versionName)) {
+                _updateInfo.value = release
+            }
+        }
+    }
+
+    fun dismissUpdate() {
+        _updateInfo.value = null
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val tasks = date.flatMapLatest { repository.observeTasksForDate(it) }
@@ -71,7 +99,12 @@ class TodayViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as HabitsApplication
-                TodayViewModel(app.container.repository, app.container.dateProvider)
+                TodayViewModel(
+                    repository = app.container.repository,
+                    dateProvider = app.container.dateProvider,
+                    updateChecker = app.container.updateChecker,
+                    currentVersionName = BuildConfig.VERSION_NAME,
+                )
             }
         }
     }

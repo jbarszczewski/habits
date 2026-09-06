@@ -27,6 +27,10 @@ android {
 
     buildTypes {
         release {
+            // No dedicated release keystore yet; sign with the debug key so
+            // CI can produce an installable APK. Swap in a real signingConfig
+            // before ever publishing this outside personal sideloading.
+            signingConfig = signingConfigs.getByName("debug")
             optimization {
                 enable = false
             }

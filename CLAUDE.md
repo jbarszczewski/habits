@@ -6,7 +6,10 @@ some with a time target (e.g. "practice singing, 30 min"). It tracks which days
 each task was done / skipped / missed and shows statistics. A home-screen widget
 lets the user complete tasks and start/stop timers without opening the app.
 
-No accounts, no sync, no network. Single user, single device.
+No accounts, no sync, no network for app data. Single user, single device.
+The one exception: on app start it checks GitHub Releases for a newer version
+and shows a dismissible banner if one exists (see `update/`). This never
+sends or syncs any user data.
 
 ## Stack (do not substitute)
 - Kotlin, Jetpack Compose (Material 3), single-activity app

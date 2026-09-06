@@ -4,6 +4,7 @@ import android.content.Context
 import com.jbarszczewski.habits.data.DateProvider
 import com.jbarszczewski.habits.data.HabitRepository
 import com.jbarszczewski.habits.data.HabitsDatabase
+import com.jbarszczewski.habits.update.UpdateChecker
 
 /**
  * Hand-written dependency container: one place that builds the singletons the rest of the app
@@ -26,4 +27,6 @@ class AppContainer(context: Context) {
             dateProvider = dateProvider,
         )
     }
+
+    val updateChecker: UpdateChecker by lazy { UpdateChecker() }
 }

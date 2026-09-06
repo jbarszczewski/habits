@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Used only to check GitHub for a newer release on app start; the app stores and syncs
+         nothing else over the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".HabitsApplication"
         android:allowBackup="true"
