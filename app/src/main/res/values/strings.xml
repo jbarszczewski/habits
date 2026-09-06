@@ -1,6 +1,38 @@
 <resources>
     <string name="app_name">Habits</string>
+
+    <string name="action_back">Back</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_add_task">Add task</string>
+    <string name="action_edit_task">Edit task</string>
+    <string name="action_all_tasks">All tasks</string>
+
     <string name="today_title">Today</string>
     <string name="today_empty">Nothing scheduled for today</string>
     <string name="today_minutes_progress">%1$d / %2$d min</string>
+
+    <string name="tasks_title">All tasks</string>
+    <string name="tasks_empty">No tasks yet. Tap + to add one.</string>
+    <string name="tasks_archived_header">Archived</string>
+    <string name="tasks_schedule_with_target">%1$s · %2$d min</string>
+
+    <string name="schedule_every_day">Every day</string>
+    <string name="schedule_weekdays">Weekdays</string>
+    <string name="schedule_weekend">Weekends</string>
+
+    <string name="editor_title_new">New task</string>
+    <string name="editor_title_edit">Edit task</string>
+    <string name="editor_name">Name</string>
+    <string name="editor_name_error">Enter a name</string>
+    <string name="editor_days">Repeat on</string>
+    <string name="editor_days_error">Pick at least one day</string>
+    <string name="editor_target">Time target</string>
+    <string name="editor_target_hint">Track minutes instead of a simple checkbox</string>
+    <string name="editor_target_minutes">Minutes per day</string>
+    <string name="editor_target_minutes_error">Enter a number greater than 0</string>
+    <string name="editor_archive">Archive task</string>
+    <string name="editor_unarchive">Restore task</string>
+    <string name="editor_archive_dialog_title">Archive this task?</string>
+    <string name="editor_archive_dialog_text">It disappears from Today but keeps its history and statistics. You can restore it later from All tasks.</string>
 </resources>

@@ -14,9 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -47,6 +54,9 @@ import java.time.format.FormatStyle
 /** Stateful entry point: owns the ViewModel and forwards state + callbacks to [TodayContent]. */
 @Composable
 fun TodayScreen(
+    onAddTask: () -> Unit,
+    onEditTask: (taskId: Long) -> Unit,
+    onOpenTaskList: () -> Unit,
     viewModel: TodayViewModel = viewModel(factory = TodayViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -58,7 +68,13 @@ fun TodayScreen(
         onPauseOrDispose { }
     }
 
-    TodayContent(state = state, onSetDone = viewModel::setDone)
+    TodayContent(
+        state = state,
+        onSetDone = viewModel::setDone,
+        onAddTask = onAddTask,
+        onEditTask = onEditTask,
+        onOpenTaskList = onOpenTaskList,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +82,9 @@ fun TodayScreen(
 fun TodayContent(
     state: TodayUiState,
     onSetDone: (taskId: Long, done: Boolean) -> Unit,
+    onAddTask: () -> Unit,
+    onEditTask: (taskId: Long) -> Unit,
+    onOpenTaskList: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -80,8 +99,18 @@ fun TodayContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                }
+                },
+                actions = {
+                    IconButton(onClick = onOpenTaskList) {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.action_all_tasks))
+                    }
+                },
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddTask) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_add_task))
+            }
         },
     ) { innerPadding ->
         when {
@@ -90,6 +119,7 @@ fun TodayContent(
             else -> TaskList(
                 tasks = state.tasks,
                 onSetDone = onSetDone,
+                onEditTask = onEditTask,
                 contentPadding = innerPadding,
             )
         }
@@ -111,12 +141,13 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 private fun TaskList(
     tasks: List<TaskWithCompletion>,
     onSetDone: (taskId: Long, done: Boolean) -> Unit,
+    onEditTask: (taskId: Long) -> Unit,
     contentPadding: PaddingValues,
 ) {
     LazyColumn(
         contentPadding = PaddingValues(
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 16.dp,
+            bottom = contentPadding.calculateBottomPadding() + 88.dp, // room for the FAB
             start = 16.dp,
             end = 16.dp,
         ),
@@ -124,16 +155,20 @@ private fun TaskList(
     ) {
         items(tasks, key = { it.task.id }) { item ->
             if (item.task.targetMinutes == null) {
-                CheckboxTaskRow(item, onSetDone = { done -> onSetDone(item.task.id, done) })
+                CheckboxTaskRow(
+                    item = item,
+                    onSetDone = { done -> onSetDone(item.task.id, done) },
+                    onEdit = { onEditTask(item.task.id) },
+                )
             } else {
-                TimedTaskRow(item)
+                TimedTaskRow(item = item, onEdit = { onEditTask(item.task.id) })
             }
         }
     }
 }
 
 @Composable
-private fun CheckboxTaskRow(item: TaskWithCompletion, onSetDone: (Boolean) -> Unit) {
+private fun CheckboxTaskRow(item: TaskWithCompletion, onSetDone: (Boolean) -> Unit, onEdit: () -> Unit) {
     val done = item.completion?.status == CompletionStatus.DONE
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -150,7 +185,9 @@ private fun CheckboxTaskRow(item: TaskWithCompletion, onSetDone: (Boolean) -> Un
                 style = MaterialTheme.typography.bodyLarge,
                 textDecoration = if (done) TextDecoration.LineThrough else null,
                 color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
             )
+            EditButton(onEdit)
         }
     }
 }
@@ -160,12 +197,12 @@ private fun CheckboxTaskRow(item: TaskWithCompletion, onSetDone: (Boolean) -> Un
  * until then the row is read-only.
  */
 @Composable
-private fun TimedTaskRow(item: TaskWithCompletion) {
+private fun TimedTaskRow(item: TaskWithCompletion, onEdit: () -> Unit) {
     val target = item.task.targetMinutes ?: return
     val actual = item.completion?.actualMinutes ?: 0
     val done = item.completion?.status == CompletionStatus.DONE
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = item.task.name,
@@ -178,13 +215,25 @@ private fun TimedTaskRow(item: TaskWithCompletion) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                EditButton(onEdit)
             }
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { (actual.toFloat() / target).coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(end = 12.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun EditButton(onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = stringResource(R.string.action_edit_task),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -211,7 +260,10 @@ private fun TodayContentPreview() {
         ),
     )
     HabitsTheme {
-        TodayContent(state = TodayUiState(date, tasks, isLoading = false), onSetDone = { _, _ -> })
+        TodayContent(
+            state = TodayUiState(date, tasks, isLoading = false),
+            onSetDone = { _, _ -> }, onAddTask = {}, onEditTask = {}, onOpenTaskList = {},
+        )
     }
 }
 
@@ -221,7 +273,7 @@ private fun TodayEmptyPreview() {
     HabitsTheme {
         TodayContent(
             state = TodayUiState(LocalDate.of(2026, 9, 6), emptyList(), isLoading = false),
-            onSetDone = { _, _ -> },
+            onSetDone = { _, _ -> }, onAddTask = {}, onEditTask = {}, onOpenTaskList = {},
         )
     }
 }
