@@ -77,6 +77,8 @@ class TaskEditorViewModel(
         it.copy(days = if (day in it.days) it.days - day else it.days + day)
     }
 
+    fun onDaysShortcut(days: Set<DayOfWeek>) = _uiState.update { it.copy(days = days) }
+
     fun onHasTargetChange(enabled: Boolean) = _uiState.update { it.copy(hasTarget = enabled) }
 
     fun onTargetMinutesChange(value: String) {
