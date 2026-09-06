@@ -51,3 +51,25 @@ class DateProviderTest {
         assertEquals(LocalDateTime.parse("2026-09-06T12:00").atZone(zone).toInstant().toEpochMilli(), provider.nowMillis())
     }
 }
+
+class DateProviderNextDayTest {
+    private val zone: ZoneId = ZoneId.of("Europe/Warsaw")
+
+    private fun providerAt(localDateTime: String, dayStartHour: Int = 0): DateProvider {
+        val instant = LocalDateTime.parse(localDateTime).atZone(zone).toInstant()
+        return DateProvider(clock = Clock.fixed(instant, zone), dayStartHour = { dayStartHour })
+    }
+
+    @Test
+    fun `next day start is midnight by default`() {
+        assertEquals(2 * 60 * 60 * 1000L, providerAt("2026-09-06T22:00").millisUntilNextDayStart())
+    }
+
+    @Test
+    fun `next day start honours the day start hour`() {
+        // 01:00 with a 4 am boundary is still logically the 5th, so the next boundary is 04:00 today.
+        assertEquals(3 * 60 * 60 * 1000L, providerAt("2026-09-06T01:00", dayStartHour = 4).millisUntilNextDayStart())
+        // 05:00 is logically the 6th; next boundary is 04:00 on the 7th.
+        assertEquals(23 * 60 * 60 * 1000L, providerAt("2026-09-06T05:00", dayStartHour = 4).millisUntilNextDayStart())
+    }
+}

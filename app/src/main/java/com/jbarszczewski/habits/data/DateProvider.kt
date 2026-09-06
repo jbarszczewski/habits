@@ -31,6 +31,16 @@ class DateProvider(
         return if (dateTime.hour < startHour) dateTime.toLocalDate().minusDays(1) else dateTime.toLocalDate()
     }
 
+    /**
+     * Millis from now until the logical date next changes, i.e. tomorrow at the day-start hour.
+     * Used to schedule the widget's day-rollover refresh.
+     */
+    fun millisUntilNextDayStart(): Long {
+        val startHour = dayStartHour().coerceIn(0, 23)
+        val nextStart = today().plusDays(1).atTime(startHour, 0).atZone(clock.zone).toInstant()
+        return (nextStart.toEpochMilli() - clock.millis()).coerceAtLeast(0)
+    }
+
     companion object {
         const val DEFAULT_DAY_START_HOUR = 0
     }
