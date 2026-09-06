@@ -36,6 +36,7 @@
     <string name="editor_archive_dialog_title">Archive this task?</string>
     <string name="editor_archive_dialog_text">It disappears from Today but keeps its history and statistics. You can restore it later from All tasks.</string>
 
+    <string name="widget_title">Habits for today</string>
     <string name="widget_label">Today\'s habits</string>
     <string name="widget_description">Tick off today\'s tasks and start timers from the home screen.</string>
     <string name="widget_start">Start</string>

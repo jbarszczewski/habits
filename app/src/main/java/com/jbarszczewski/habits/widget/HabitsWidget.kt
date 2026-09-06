@@ -54,8 +54,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /** Everything one render of the widget needs. */
 private data class WidgetData(
@@ -85,7 +83,7 @@ class HabitsWidget : GlanceAppWidget() {
         provideContent {
             val data by dataFlow.collectAsState(initial)
             GlanceTheme {
-                WidgetContent(today = data.today, items = data.items, nowMillis = data.nowMillis)
+                WidgetContent(items = data.items, nowMillis = data.nowMillis)
             }
         }
     }
@@ -115,7 +113,7 @@ class HabitsWidget : GlanceAppWidget() {
 }
 
 @Composable
-private fun WidgetContent(today: LocalDate, items: List<TaskWithCompletion>, nowMillis: Long) {
+private fun WidgetContent(items: List<TaskWithCompletion>, nowMillis: Long) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -124,17 +122,24 @@ private fun WidgetContent(today: LocalDate, items: List<TaskWithCompletion>, now
             .cornerRadius(20.dp)
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        Header(today, items)
+        Header(items)
         Spacer(GlanceModifier.height(10.dp))
         if (items.isEmpty()) {
             EmptyState()
         } else {
+            // Each item wraps its card in a Column with a trailing spacer. A vertical padding on
+            // the card itself does not reliably create a gap between rows in a Glance LazyColumn
+            // (adjacent RemoteViews list rows can end up touching), so the gap is a real Spacer
+            // between rows instead.
             LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
                 items(items, itemId = { it.task.id }) { item ->
-                    if (item.task.targetMinutes == null) {
-                        CheckboxRow(item)
-                    } else {
-                        TimedRow(item, nowMillis)
+                    Column(modifier = GlanceModifier.fillMaxWidth()) {
+                        if (item.task.targetMinutes == null) {
+                            CheckboxRow(item)
+                        } else {
+                            TimedRow(item, nowMillis)
+                        }
+                        Spacer(GlanceModifier.height(10.dp))
                     }
                 }
             }
@@ -143,7 +148,7 @@ private fun WidgetContent(today: LocalDate, items: List<TaskWithCompletion>, now
 }
 
 @Composable
-private fun Header(today: LocalDate, items: List<TaskWithCompletion>) {
+private fun Header(items: List<TaskWithCompletion>) {
     val doneCount = items.count { it.completion?.status == CompletionStatus.DONE }
     Row(
         modifier = GlanceModifier
@@ -151,16 +156,11 @@ private fun Header(today: LocalDate, items: List<TaskWithCompletion>) {
             .clickable(actionStartActivity<MainActivity>()),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = LocalContext.current.getString(R.string.today_title),
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold),
-            )
-            Text(
-                text = today.format(HEADER_DATE),
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
-            )
-        }
+        Text(
+            text = LocalContext.current.getString(R.string.widget_title),
+            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold),
+            modifier = GlanceModifier.defaultWeight(),
+        )
         if (items.isNotEmpty()) {
             ProgressPill(doneCount, items.size)
         }
@@ -198,16 +198,16 @@ private fun EmptyState() {
 }
 
 /**
- * A rounded "card" wrapper shared by both row kinds: outer margin, tonal fill, inner padding.
- * A fixed height keeps a one-line checkbox row and a two-line timed row the same size; content
- * is centered vertically within it via the Row's [Alignment.CenterVertically].
+ * A rounded "card" wrapper shared by both row kinds: tonal fill, inner padding. A fixed height
+ * keeps a one-line checkbox row and a two-line timed row the same size; content is centered
+ * vertically within it via the Row's [Alignment.CenterVertically]. The gap between cards is added
+ * by the caller (a trailing Spacer per LazyColumn item), not by this wrapper.
  */
 @Composable
 private fun TaskCard(onClick: androidx.glance.action.Action, content: @Composable androidx.glance.layout.RowScope.() -> Unit) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
             .height(64.dp)
             .background(GlanceTheme.colors.surfaceVariant)
             .cornerRadius(16.dp)
@@ -331,4 +331,3 @@ private fun TimerButton(running: Boolean, onClick: androidx.glance.action.Action
     }
 }
 
-private val HEADER_DATE: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
