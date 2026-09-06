@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jbarszczewski.habits.R
+import com.jbarszczewski.habits.data.DaysMask
 import com.jbarszczewski.habits.ui.theme.HabitsTheme
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -66,6 +69,7 @@ fun TaskEditorScreen(
         onBack = onDone,
         onNameChange = viewModel::onNameChange,
         onDayToggle = viewModel::onDayToggle,
+        onDaysShortcut = viewModel::onDaysShortcut,
         onHasTargetChange = viewModel::onHasTargetChange,
         onTargetMinutesChange = viewModel::onTargetMinutesChange,
         onSave = viewModel::save,
@@ -81,6 +85,7 @@ fun TaskEditorContent(
     onBack: () -> Unit,
     onNameChange: (String) -> Unit,
     onDayToggle: (DayOfWeek) -> Unit,
+    onDaysShortcut: (Set<DayOfWeek>) -> Unit,
     onHasTargetChange: (Boolean) -> Unit,
     onTargetMinutesChange: (String) -> Unit,
     onSave: () -> Unit,
@@ -133,6 +138,7 @@ fun TaskEditorContent(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.editor_days), style = MaterialTheme.typography.titleSmall)
+                DaysShortcuts(selected = state.days, onSelect = onDaysShortcut)
                 WeekdayPicker(selected = state.days, onToggle = onDayToggle)
                 if (state.showErrors && state.daysError) {
                     Text(
@@ -208,6 +214,37 @@ fun TaskEditorContent(
     }
 }
 
+/**
+ * Quick presets for the day picker below: select every day (tapping again clears it),
+ * or jump straight to the Mon-Fri / Sat-Sun split.
+ */
+@Composable
+private fun DaysShortcuts(selected: Set<DayOfWeek>, onSelect: (Set<DayOfWeek>) -> Unit) {
+    val allDays = remember { DayOfWeek.entries.toSet() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = selected == allDays,
+            onClick = { onSelect(if (selected == allDays) emptySet() else allDays) },
+            label = { Text(stringResource(R.string.editor_days_all)) },
+        )
+        FilterChip(
+            selected = selected == DaysMask.WEEKDAYS,
+            onClick = { onSelect(DaysMask.WEEKDAYS) },
+            label = { Text(stringResource(R.string.editor_days_weekdays)) },
+        )
+        FilterChip(
+            selected = selected == DaysMask.WEEKEND,
+            onClick = { onSelect(DaysMask.WEEKEND) },
+            label = { Text(stringResource(R.string.editor_days_weekend)) },
+        )
+    }
+}
+
 /** Seven toggle chips, Monday first, using the device locale's short day names. */
 @Composable
 private fun WeekdayPicker(selected: Set<DayOfWeek>, onToggle: (DayOfWeek) -> Unit) {
@@ -247,7 +284,7 @@ private fun TaskEditorPreview() {
                 hasTarget = true,
                 targetMinutes = "30",
             ),
-            onBack = {}, onNameChange = {}, onDayToggle = {}, onHasTargetChange = {},
+            onBack = {}, onNameChange = {}, onDayToggle = {}, onDaysShortcut = {}, onHasTargetChange = {},
             onTargetMinutesChange = {}, onSave = {}, onArchive = {}, onUnarchive = {},
         )
     }

@@ -30,6 +30,9 @@
     <string name="editor_name">Name</string>
     <string name="editor_name_error">Enter a name</string>
     <string name="editor_days">Repeat on</string>
+    <string name="editor_days_all">All</string>
+    <string name="editor_days_weekdays">Weekdays</string>
+    <string name="editor_days_weekend">Weekend</string>
     <string name="editor_days_error">Pick at least one day</string>
     <string name="editor_target">Time target</string>
     <string name="editor_target_hint">Track minutes instead of a simple checkbox</string>

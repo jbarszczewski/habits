@@ -24,4 +24,9 @@ object DaysMask {
         DayOfWeek.entries.filterTo(linkedSetOf()) { contains(mask, it) }
 
     fun isValid(mask: Int): Boolean = mask in 1..EVERY_DAY
+
+    val WEEKDAYS: Set<DayOfWeek> = setOf(
+        DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY,
+    )
+    val WEEKEND: Set<DayOfWeek> = setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 }
