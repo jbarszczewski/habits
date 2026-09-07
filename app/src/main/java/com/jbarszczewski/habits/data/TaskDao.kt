@@ -47,6 +47,18 @@ interface TaskDao {
     )
     fun observeScheduledOn(date: LocalDate, dayBit: Int): Flow<List<Task>>
 
+    /** One-shot counterpart of [observeScheduledOn], used by the reminder check. */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE archived_at IS NULL
+          AND created_at <= :date
+          AND (days_mask & :dayBit) != 0
+        ORDER BY id
+        """
+    )
+    suspend fun getScheduledOn(date: LocalDate, dayBit: Int): List<Task>
+
     @Query("SELECT * FROM tasks WHERE timer_started_at IS NOT NULL")
     suspend fun getWithRunningTimer(): List<Task>
 

@@ -3,6 +3,8 @@ package com.jbarszczewski.habits
 import android.app.Application
 import androidx.glance.appwidget.updateAll
 import com.jbarszczewski.habits.data.DaysMask
+import com.jbarszczewski.habits.notifications.ReminderNotifier
+import com.jbarszczewski.habits.notifications.ReminderScheduler
 import com.jbarszczewski.habits.widget.HabitsWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +33,8 @@ class HabitsApplication : Application() {
         container = AppContainer(this)
         if (BuildConfig.DEBUG) seedDebugData()
         keepWidgetInSync()
+        ReminderNotifier.ensureChannel(this)
+        ReminderScheduler.ensureScheduled(this)
     }
 
     /**

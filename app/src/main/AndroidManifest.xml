@@ -6,6 +6,10 @@
          nothing else over the network. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Required on API 33+ to show the noon/4pm habit reminder; requested at runtime from
+         MainActivity. Declaring it is a no-op on older versions. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".HabitsApplication"
         android:allowBackup="true"

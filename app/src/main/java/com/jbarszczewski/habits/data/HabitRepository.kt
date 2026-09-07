@@ -46,7 +46,12 @@ class HabitRepository(
             tasks.map { TaskWithCompletion(it, byTask[it.id]) }
         }
 
-    suspend fun createTask(name: String, daysMask: Int, targetMinutes: Int? = null): Long {
+    suspend fun createTask(
+        name: String,
+        daysMask: Int,
+        targetMinutes: Int? = null,
+        notificationsEnabled: Boolean = true,
+    ): Long {
         require(name.isNotBlank()) { "Task name must not be blank" }
         require(DaysMask.isValid(daysMask)) { "days_mask must have at least one weekday set" }
         require(targetMinutes == null || targetMinutes > 0) { "target_minutes must be positive or null" }
@@ -55,15 +60,16 @@ class HabitRepository(
                 name = name.trim(),
                 daysMask = daysMask,
                 targetMinutes = targetMinutes,
+                notificationsEnabled = notificationsEnabled,
                 createdAt = dateProvider.today(),
             )
         )
     }
 
     /**
-     * Edits name / schedule / target. Only these three fields are taken from [task]; timer state
-     * and dates are left untouched. History is never rewritten: a new schedule simply changes how
-     * future days are judged.
+     * Edits name / schedule / target / reminder opt-out. Only these fields are taken from [task];
+     * timer state and dates are left untouched. History is never rewritten: a new schedule simply
+     * changes how future days are judged.
      */
     suspend fun updateTask(task: Task) {
         require(task.name.isNotBlank()) { "Task name must not be blank" }
@@ -75,6 +81,7 @@ class HabitRepository(
                 name = task.name.trim(),
                 daysMask = task.daysMask,
                 targetMinutes = task.targetMinutes,
+                notificationsEnabled = task.notificationsEnabled,
             )
         )
     }
@@ -176,6 +183,23 @@ class HabitRepository(
     }
 
     suspend fun getTasksWithRunningTimer(): List<Task> = taskDao.getWithRunningTimer()
+
+    // ---------------------------------------------------------------- reminders
+
+    /**
+     * Active, reminder-enabled tasks scheduled on [date] that are neither DONE nor deliberately
+     * SKIPPED yet. Used by the noon/4pm reminder check; a MISS with no completions row still
+     * counts as unfinished, a SKIPPED one does not (the user already made a choice for the day).
+     */
+    suspend fun getUnfinishedReminders(date: LocalDate = dateProvider.today()): List<Task> {
+        val scheduled = taskDao.getScheduledOn(date, DaysMask.bit(date.dayOfWeek))
+        val completionByTask = completionDao.getForDate(date).associateBy { it.taskId }
+        return scheduled.filter { task ->
+            task.notificationsEnabled && completionByTask[task.id]?.status.let { status ->
+                status != CompletionStatus.DONE && status != CompletionStatus.SKIPPED
+            }
+        }
+    }
 
     // ---------------------------------------------------------------- statistics
 

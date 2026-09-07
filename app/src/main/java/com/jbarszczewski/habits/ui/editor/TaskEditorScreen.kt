@@ -72,6 +72,7 @@ fun TaskEditorScreen(
         onDaysShortcut = viewModel::onDaysShortcut,
         onHasTargetChange = viewModel::onHasTargetChange,
         onTargetMinutesChange = viewModel::onTargetMinutesChange,
+        onNotificationsEnabledChange = viewModel::onNotificationsEnabledChange,
         onSave = viewModel::save,
         onArchive = viewModel::archive,
         onUnarchive = viewModel::unarchive,
@@ -88,6 +89,7 @@ fun TaskEditorContent(
     onDaysShortcut: (Set<DayOfWeek>) -> Unit,
     onHasTargetChange: (Boolean) -> Unit,
     onTargetMinutesChange: (String) -> Unit,
+    onNotificationsEnabledChange: (Boolean) -> Unit,
     onSave: () -> Unit,
     onArchive: () -> Unit,
     onUnarchive: () -> Unit,
@@ -178,6 +180,21 @@ fun TaskEditorContent(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.editor_notifications), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = stringResource(R.string.editor_notifications_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = state.notificationsEnabled, onCheckedChange = onNotificationsEnabledChange)
             }
 
             if (state.isExisting) {
@@ -285,7 +302,7 @@ private fun TaskEditorPreview() {
                 targetMinutes = "30",
             ),
             onBack = {}, onNameChange = {}, onDayToggle = {}, onDaysShortcut = {}, onHasTargetChange = {},
-            onTargetMinutesChange = {}, onSave = {}, onArchive = {}, onUnarchive = {},
+            onTargetMinutesChange = {}, onNotificationsEnabledChange = {}, onSave = {}, onArchive = {}, onUnarchive = {},
         )
     }
 }
