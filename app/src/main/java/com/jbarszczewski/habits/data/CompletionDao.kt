@@ -21,6 +21,10 @@ interface CompletionDao {
     @Query("SELECT * FROM completions WHERE date = :date")
     fun observeForDate(date: LocalDate): Flow<List<Completion>>
 
+    /** One-shot counterpart of [observeForDate], used by the reminder check. */
+    @Query("SELECT * FROM completions WHERE date = :date")
+    suspend fun getForDate(date: LocalDate): List<Completion>
+
     /** All completions with `from <= date <= to`, for all tasks. */
     @Query("SELECT * FROM completions WHERE date BETWEEN :from AND :to ORDER BY date")
     suspend fun getBetween(from: LocalDate, to: LocalDate): List<Completion>
