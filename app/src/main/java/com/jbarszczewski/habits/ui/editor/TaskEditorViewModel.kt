@@ -24,6 +24,7 @@ data class TaskEditorUiState(
     val days: Set<DayOfWeek> = DayOfWeek.entries.toSet(),
     val hasTarget: Boolean = false,
     val targetMinutes: String = "30",
+    val notificationsEnabled: Boolean = true,
     // Validation errors are only shown after the first save attempt.
     val showErrors: Boolean = false,
     /** Set once the task was saved or archived; the screen navigates back when it sees this. */
@@ -64,6 +65,7 @@ class TaskEditorViewModel(
                             days = DaysMask.toDays(task.daysMask),
                             hasTarget = task.targetMinutes != null,
                             targetMinutes = task.targetMinutes?.toString() ?: "30",
+                            notificationsEnabled = task.notificationsEnabled,
                         )
                     }
                 }
@@ -81,6 +83,8 @@ class TaskEditorViewModel(
 
     fun onHasTargetChange(enabled: Boolean) = _uiState.update { it.copy(hasTarget = enabled) }
 
+    fun onNotificationsEnabledChange(enabled: Boolean) = _uiState.update { it.copy(notificationsEnabled = enabled) }
+
     fun onTargetMinutesChange(value: String) {
         // Digits only, and keep it short: nobody targets more than 4 digits of minutes a day.
         if (value.length <= 4 && value.all(Char::isDigit)) _uiState.update { it.copy(targetMinutes = value) }
@@ -97,9 +101,21 @@ class TaskEditorViewModel(
         viewModelScope.launch {
             val existing = original
             if (existing == null) {
-                repository.createTask(name = state.name, daysMask = mask, targetMinutes = target)
+                repository.createTask(
+                    name = state.name,
+                    daysMask = mask,
+                    targetMinutes = target,
+                    notificationsEnabled = state.notificationsEnabled,
+                )
             } else {
-                repository.updateTask(existing.copy(name = state.name, daysMask = mask, targetMinutes = target))
+                repository.updateTask(
+                    existing.copy(
+                        name = state.name,
+                        daysMask = mask,
+                        targetMinutes = target,
+                        notificationsEnabled = state.notificationsEnabled,
+                    )
+                )
             }
             _uiState.update { it.copy(isFinished = true) }
         }

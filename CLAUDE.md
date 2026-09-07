@@ -18,7 +18,8 @@ syncs any user data.
 - Room for persistence
 - Jetpack Glance for the widget
 - Foreground service for the running timer
-- WorkManager only for the daily midnight widget refresh
+- WorkManager for the daily midnight widget refresh and the noon/4pm reminder check (both use
+  the same self-rescheduling one-time-work pattern; no other background scheduling)
 - Coroutines + Flow; no RxJava, no LiveData
 - Min SDK 26, target latest stable
 - Simple MVVM: `ui/` (screens + ViewModels), `data/` (Room + repository),
@@ -38,6 +39,7 @@ tasks
   name           String
   days_mask      Int      -- 7 bits, bit 0 = Monday ... bit 6 = Sunday; 127 = every day
   target_minutes Int?     -- null = plain checkbox task
+  notifications_enabled Int -- 0/1, default 1; per-task opt-out of the noon/4pm reminder
   timer_started_at Long?  -- epoch millis while a timer is running, else null
   created_at     String   -- ISO local date "yyyy-MM-dd"
   archived_at    String?  -- ISO local date; archived tasks keep their history
@@ -93,6 +95,20 @@ Rules:
 - Stopping adds elapsed minutes to today's completions row and clears
   `timer_started_at`.
 - Manual minute entry must also be possible from the task detail screen.
+
+## Notifications
+
+- At 12:00 and 16:00 local wall-clock time, a WorkManager job checks which active,
+  reminder-enabled tasks are scheduled today and not yet DONE or SKIPPED (a MISS with no
+  completions row still counts as unfinished).
+- If any are unfinished, show one grouped notification listing them (not one per habit).
+  Tapping it opens the app.
+- `Task.notifications_enabled` opts a single task out; there is no global on/off switch. Default
+  is enabled. Editable from the add/edit screen alongside the other per-task fields.
+- Requires runtime `POST_NOTIFICATIONS` permission on API 33+, requested once from
+  `MainActivity`. If declined, the reminder check still runs but shows nothing.
+- The job re-schedules its own next run after each check (same pattern as the widget's midnight
+  refresh), so it needs no boot receiver.
 
 ## Build order (finish and run each step before starting the next)
 

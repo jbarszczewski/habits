@@ -27,6 +27,10 @@ data class Task(
     @ColumnInfo(name = "target_minutes")
     val targetMinutes: Int? = null,
 
+    /** Whether the noon/4pm reminder checks this task. Opt-out lives per task, not globally. */
+    @ColumnInfo(name = "notifications_enabled")
+    val notificationsEnabled: Boolean = true,
+
     /** Epoch millis of when the running timer was started, or `null` when no timer runs. */
     @ColumnInfo(name = "timer_started_at")
     val timerStartedAt: Long? = null,
