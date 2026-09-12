@@ -37,25 +37,30 @@ android {
     }
 
     // signingConfigs must be declared before buildTypes so buildTypes can reference them.
+    // Only declare a "release" signing config when keystore.properties is present; a
+    // SigningConfig block can't itself reference another one, so the fallback to the
+    // debug key is chosen below when picking buildTypes.release.signingConfig instead.
     signingConfigs {
-        create("release") {
-            if (keystorePropsFile.exists()) {
-                // Use the stable release keystore when keystore.properties is present.
+        if (keystorePropsFile.exists()) {
+            create("release") {
                 storeFile = rootProject.file(keystoreProps["storeFile"] as String)
                 storePassword = keystoreProps["storePassword"] as String
                 keyAlias = keystoreProps["keyAlias"] as String
                 keyPassword = keystoreProps["keyPassword"] as String
-            } else {
-                // Fall back to the debug key so the project still builds without
-                // keystore.properties (e.g. fresh checkout, CI without secrets).
-                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // Use the stable release keystore when keystore.properties is present.
+            // Otherwise fall back to the debug key so the project still builds
+            // without it (e.g. fresh checkout, CI without secrets).
+            signingConfig = if (keystorePropsFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             optimization {
                 enable = false
             }
