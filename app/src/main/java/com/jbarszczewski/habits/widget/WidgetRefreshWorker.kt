@@ -1,7 +1,6 @@
 package com.jbarszczewski.habits.widget
 
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit
 class WidgetRefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        HabitsWidget().updateAll(applicationContext)
+        updateAllHabitWidgets(applicationContext)
         WidgetRefreshScheduler.scheduleNextDayStart(applicationContext)
         return Result.success()
     }
@@ -36,9 +35,5 @@ object WidgetRefreshScheduler {
             .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
-    }
-
-    fun cancel(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
     }
 }

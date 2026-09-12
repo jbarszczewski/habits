@@ -61,6 +61,9 @@
     <string name="widget_title">Habits for today</string>
     <string name="widget_label">Today\'s habits</string>
     <string name="widget_description">Tick off today\'s tasks and start timers from the home screen.</string>
+    <string name="widget_history_label">Habits with week history</string>
+    <string name="widget_history_description">See today\'s tasks and a one-week activity history from the home screen.</string>
+    <string name="widget_history_title">This week</string>
     <string name="widget_start">Start</string>
     <string name="widget_stop">Stop</string>
 

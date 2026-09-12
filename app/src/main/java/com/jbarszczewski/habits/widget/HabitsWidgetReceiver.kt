@@ -17,9 +17,4 @@ class HabitsWidgetReceiver : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         WidgetRefreshScheduler.scheduleNextDayStart(context)
     }
-
-    override fun onDisabled(context: Context) {
-        super.onDisabled(context)
-        WidgetRefreshScheduler.cancel(context)
-    }
 }

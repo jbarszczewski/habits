@@ -36,11 +36,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jbarszczewski.habits.R
+import com.jbarszczewski.habits.data.stats.HeatmapDay
+import com.jbarszczewski.habits.data.stats.HeatmapIntensity
+import com.jbarszczewski.habits.data.stats.HeatmapWeek
 import com.jbarszczewski.habits.ui.theme.HabitsTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /** Stateful entry point: owns the ViewModel and forwards state to [CalendarContent]. */
@@ -94,7 +96,7 @@ fun CalendarContent(
 
 /** The GitHub-style contribution grid: rows = Mon–Sun, columns = weeks (oldest left). */
 @Composable
-private fun ActivityHeatmap(weeks: List<WeekColumn>) {
+private fun ActivityHeatmap(weeks: List<HeatmapWeek>) {
     // Horizontal scroll so the full 18-week grid is reachable on narrow screens.
     val scrollState = rememberScrollState()
 
@@ -146,7 +148,7 @@ private fun DayLabels() {
 
 /** A single week column: 7 cells stacked from Monday (top) to Sunday (bottom). */
 @Composable
-private fun WeekColumnView(week: WeekColumn) {
+private fun WeekColumnView(week: HeatmapWeek) {
     Column(verticalArrangement = Arrangement.spacedBy(CELL_GAP)) {
         for (day in week.days) {
             if (day == null) {
@@ -161,7 +163,7 @@ private fun WeekColumnView(week: WeekColumn) {
 
 /** One square whose colour reflects the day's completion intensity. */
 @Composable
-private fun HeatCell(day: CalendarDay) {
+private fun HeatCell(day: HeatmapDay) {
     val primary = MaterialTheme.colorScheme.primary
     val surface = MaterialTheme.colorScheme.surfaceVariant
     val secondary = MaterialTheme.colorScheme.secondary
@@ -176,19 +178,19 @@ private fun HeatCell(day: CalendarDay) {
 }
 
 /**
- * Maps each [CellIntensity] level to a concrete colour.
+ * Maps each [HeatmapIntensity] level to a concrete colour.
  *
  * [primary] is the theme's primary colour (used at increasing opacity for the filled levels).
  * [surface] is used for unscheduled / empty cells.
  */
-private fun CellIntensity.toColor(primary: Color, surface: Color, secondary: Color): Color = when (this) {
-    CellIntensity.NONE -> surface
-    CellIntensity.IN_PROGRESS -> secondary.copy(alpha = 0.40f)
-    CellIntensity.MISSED -> primary.copy(alpha = 0.10f)
-    CellIntensity.LOW -> primary.copy(alpha = 0.30f)
-    CellIntensity.MEDIUM -> primary.copy(alpha = 0.55f)
-    CellIntensity.HIGH -> primary.copy(alpha = 0.75f)
-    CellIntensity.FULL -> primary
+private fun HeatmapIntensity.toColor(primary: Color, surface: Color, secondary: Color): Color = when (this) {
+    HeatmapIntensity.NONE -> surface
+    HeatmapIntensity.IN_PROGRESS -> secondary.copy(alpha = 0.40f)
+    HeatmapIntensity.MISSED -> primary.copy(alpha = 0.10f)
+    HeatmapIntensity.LOW -> primary.copy(alpha = 0.30f)
+    HeatmapIntensity.MEDIUM -> primary.copy(alpha = 0.55f)
+    HeatmapIntensity.HIGH -> primary.copy(alpha = 0.75f)
+    HeatmapIntensity.FULL -> primary
 }
 
 /**
@@ -197,7 +199,7 @@ private fun CellIntensity.toColor(primary: Color, surface: Color, secondary: Col
  * even when the 1st falls mid-week.
  */
 @Composable
-private fun MonthLabelRow(weeks: List<WeekColumn>) {
+private fun MonthLabelRow(weeks: List<HeatmapWeek>) {
     val locale = Locale.getDefault()
     Row(horizontalArrangement = Arrangement.spacedBy(CELL_GAP)) {
         var lastLabeledMonth = -1
@@ -242,13 +244,13 @@ private fun Legend() {
     val secondary = MaterialTheme.colorScheme.secondary
 
     val levels = listOf(
-        CellIntensity.NONE to stringResource(R.string.calendar_legend_none),
-        CellIntensity.IN_PROGRESS to stringResource(R.string.calendar_legend_today),
-        CellIntensity.MISSED to stringResource(R.string.calendar_legend_missed),
-        CellIntensity.LOW to stringResource(R.string.calendar_legend_25),
-        CellIntensity.MEDIUM to stringResource(R.string.calendar_legend_50),
-        CellIntensity.HIGH to stringResource(R.string.calendar_legend_75),
-        CellIntensity.FULL to stringResource(R.string.calendar_legend_100),
+        HeatmapIntensity.NONE to stringResource(R.string.calendar_legend_none),
+        HeatmapIntensity.IN_PROGRESS to stringResource(R.string.calendar_legend_today),
+        HeatmapIntensity.MISSED to stringResource(R.string.calendar_legend_missed),
+        HeatmapIntensity.LOW to stringResource(R.string.calendar_legend_25),
+        HeatmapIntensity.MEDIUM to stringResource(R.string.calendar_legend_50),
+        HeatmapIntensity.HIGH to stringResource(R.string.calendar_legend_75),
+        HeatmapIntensity.FULL to stringResource(R.string.calendar_legend_100),
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -309,21 +311,21 @@ private fun CalendarContentPreview() {
     }
 }
 
-private fun buildPreviewWeeks(today: LocalDate): List<WeekColumn> {
-    val intensities = CellIntensity.entries
+private fun buildPreviewWeeks(today: LocalDate): List<HeatmapWeek> {
+    val intensities = HeatmapIntensity.entries
     return (0 until CalendarViewModel.WEEKS_SHOWN).map { w ->
         val weekStart = today.minusWeeks((CalendarViewModel.WEEKS_SHOWN - 1 - w).toLong())
             .with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val days = (0..6).map { d ->
             val date = weekStart.plusDays(d.toLong())
             if (date.isAfter(today)) null
-            else CalendarDay(
+            else HeatmapDay(
                 date = date,
                 intensity = intensities[(w + d) % intensities.size],
                 scheduledCount = 3,
                 completedCredit = d.toDouble(),
             )
         }
-        WeekColumn(weekStart, days)
+        HeatmapWeek(weekStart, days)
     }
 }

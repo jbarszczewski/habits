@@ -1,11 +1,10 @@
 package com.jbarszczewski.habits
 
 import android.app.Application
-import androidx.glance.appwidget.updateAll
 import com.jbarszczewski.habits.data.DaysMask
 import com.jbarszczewski.habits.notifications.ReminderNotifier
 import com.jbarszczewski.habits.notifications.ReminderScheduler
-import com.jbarszczewski.habits.widget.HabitsWidget
+import com.jbarszczewski.habits.widget.updateAllHabitWidgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -49,7 +48,7 @@ class HabitsApplication : Application() {
             container.database.invalidationTracker
                 .createFlow("tasks", "completions", emitInitialState = false)
                 .debounce(300)
-                .collect { HabitsWidget().updateAll(this@HabitsApplication) }
+                .collect { updateAllHabitWidgets(this@HabitsApplication) }
         }
     }
 
