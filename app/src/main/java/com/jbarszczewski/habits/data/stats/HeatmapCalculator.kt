@@ -110,6 +110,8 @@ object HeatmapCalculator {
 
         val intensity = when {
             scheduled == 0 -> HeatmapIntensity.NONE
+            // A skipped row means "the user made a choice", but if any scheduled task is still
+            // untouched today the day is still in progress rather than already missed.
             date == today && creditSum == 0.0 && hasPendingScheduledTask -> HeatmapIntensity.IN_PROGRESS
             creditSum == 0.0 -> HeatmapIntensity.MISSED
             else -> {

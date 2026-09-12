@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -197,22 +196,14 @@ private fun HistoryCell(intensity: HeatmapIntensity) {
     ) {}
 }
 
-@Composable
-private fun HeatmapIntensity.toWidgetColor(): ColorProvider {
-    val context = LocalContext.current
-    val primary = GlanceTheme.colors.primary.getColor(context)
-    val surface = GlanceTheme.colors.surfaceVariant.getColor(context)
-    val secondary = GlanceTheme.colors.secondary.getColor(context)
-    val color = when (this) {
-        HeatmapIntensity.NONE -> surface
-        HeatmapIntensity.IN_PROGRESS -> secondary.copy(alpha = 0.40f)
-        HeatmapIntensity.MISSED -> primary.copy(alpha = 0.10f)
-        HeatmapIntensity.LOW -> primary.copy(alpha = 0.30f)
-        HeatmapIntensity.MEDIUM -> primary.copy(alpha = 0.55f)
-        HeatmapIntensity.HIGH -> primary.copy(alpha = 0.75f)
-        HeatmapIntensity.FULL -> primary
-    }
-    return ColorProvider(color)
+private fun HeatmapIntensity.toWidgetColor(): ColorProvider = when (this) {
+    HeatmapIntensity.NONE -> ColorProvider(R.color.widget_heatmap_none)
+    HeatmapIntensity.IN_PROGRESS -> ColorProvider(R.color.widget_heatmap_in_progress)
+    HeatmapIntensity.MISSED -> ColorProvider(R.color.widget_heatmap_missed)
+    HeatmapIntensity.LOW -> ColorProvider(R.color.widget_heatmap_low)
+    HeatmapIntensity.MEDIUM -> ColorProvider(R.color.widget_heatmap_medium)
+    HeatmapIntensity.HIGH -> ColorProvider(R.color.widget_heatmap_high)
+    HeatmapIntensity.FULL -> ColorProvider(R.color.widget_heatmap_full)
 }
 
 @Composable
