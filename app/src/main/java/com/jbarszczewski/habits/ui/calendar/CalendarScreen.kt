@@ -40,6 +40,7 @@ import com.jbarszczewski.habits.ui.theme.HabitsTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /** Stateful entry point: owns the ViewModel and forwards state to [CalendarContent]. */
@@ -201,10 +202,15 @@ private fun MonthLabelRow(weeks: List<WeekColumn>) {
     Row(horizontalArrangement = Arrangement.spacedBy(CELL_GAP)) {
         var lastLabeledMonth = -1
         for (week in weeks) {
-            // Find the earliest date in the week that starts a new month.
+            // Find the earliest visible day in the week that starts a new month.
             val newMonthDay = (0..6)
                 .map { week.weekStart.plusDays(it.toLong()) }
-                .firstOrNull { it.dayOfMonth == 1 }
+                .firstOrNull { day ->
+                    // Only consider days that are actually rendered (present in the days list as
+                    // non-null), so we don't label future months before their cells are visible.
+                    val dayIndex = java.time.temporal.ChronoUnit.DAYS.between(week.weekStart, day).toInt()
+                    week.days.getOrNull(dayIndex) != null && day.dayOfMonth == 1
+                }
             val label = if (newMonthDay != null && newMonthDay.monthValue != lastLabeledMonth) {
                 lastLabeledMonth = newMonthDay.monthValue
                 newMonthDay.month.getDisplayName(TextStyle.SHORT, locale)
