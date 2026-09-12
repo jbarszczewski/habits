@@ -45,6 +45,13 @@
     <string name="editor_notifications">Reminders</string>
     <string name="editor_notifications_hint">Notify at 12pm and 4pm if not done yet today</string>
 
+    <string name="action_open_calendar">Activity calendar</string>
+
+    <string name="calendar_title">Activity</string>
+    <string name="calendar_legend_title">Legend</string>
+    <string name="calendar_legend_none">None</string>
+    <string name="calendar_legend_missed">Missed</string>
+
     <string name="widget_title">Habits for today</string>
     <string name="widget_label">Today\'s habits</string>
     <string name="widget_description">Tick off today\'s tasks and start timers from the home screen.</string>

@@ -201,6 +201,18 @@ class HabitRepository(
         }
     }
 
+    // ---------------------------------------------------------------- calendar / heatmap
+
+    /**
+     * All completions within [from]..[to] (inclusive) across every task.
+     * Used by the calendar heatmap to colour the grid cells.
+     */
+    suspend fun getCompletionsInRange(from: LocalDate, to: LocalDate): List<Completion> =
+        completionDao.getBetween(from, to)
+
+    /** All tasks regardless of archived status. Used by the heatmap to compute scheduled counts. */
+    suspend fun getAllTasks(): List<Task> = taskDao.getAll()
+
     // ---------------------------------------------------------------- statistics
 
     suspend fun getStats(taskId: Long): TaskStats {

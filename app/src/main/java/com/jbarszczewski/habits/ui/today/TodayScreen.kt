@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -63,6 +64,7 @@ fun TodayScreen(
     onAddTask: () -> Unit,
     onEditTask: (taskId: Long) -> Unit,
     onOpenTaskList: () -> Unit,
+    onOpenCalendar: () -> Unit,
     viewModel: TodayViewModel = viewModel(factory = TodayViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -83,6 +85,7 @@ fun TodayScreen(
         onAddTask = onAddTask,
         onEditTask = onEditTask,
         onOpenTaskList = onOpenTaskList,
+        onOpenCalendar = onOpenCalendar,
         onViewUpdate = { info -> context.startActivity(Intent(Intent.ACTION_VIEW, info.releaseUrl.toUri())) },
         onDismissUpdate = viewModel::dismissUpdate,
     )
@@ -96,6 +99,7 @@ fun TodayContent(
     onAddTask: () -> Unit,
     onEditTask: (taskId: Long) -> Unit,
     onOpenTaskList: () -> Unit,
+    onOpenCalendar: () -> Unit = {},
     updateInfo: UpdateInfo? = null,
     onViewUpdate: (UpdateInfo) -> Unit = {},
     onDismissUpdate: () -> Unit = {},
@@ -115,6 +119,9 @@ fun TodayContent(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenCalendar) {
+                        Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.action_open_calendar))
+                    }
                     IconButton(onClick = onOpenTaskList) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.action_all_tasks))
                     }
