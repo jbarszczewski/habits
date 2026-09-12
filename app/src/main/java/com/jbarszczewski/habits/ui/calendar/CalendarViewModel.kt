@@ -41,14 +41,14 @@ enum class CellIntensity {
  *
  * @param date the calendar date this cell represents
  * @param intensity how complete the day was
- * @param scheduledCount how many tasks were scheduled (used in the tooltip)
- * @param doneCount how many were DONE
+ * @param scheduledCount how many tasks were scheduled
+ * @param completedCredit sum of credit earned (1.0 per DONE, fractional for PARTIAL)
  */
 data class CalendarDay(
     val date: LocalDate,
     val intensity: CellIntensity,
     val scheduledCount: Int,
-    val doneCount: Int,
+    val completedCredit: Double,
 )
 
 /**
@@ -174,7 +174,7 @@ class CalendarViewModel(
             }
         }
 
-        return CalendarDay(date, intensity, scheduled, doneCount = creditSum.toInt())
+        return CalendarDay(date, intensity, scheduled, completedCredit = creditSum)
     }
 
     companion object {

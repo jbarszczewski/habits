@@ -307,7 +307,7 @@ private fun buildPreviewWeeks(today: LocalDate): List<WeekColumn> {
                 date = date,
                 intensity = intensities[(w + d) % intensities.size],
                 scheduledCount = 3,
-                doneCount = d,
+                completedCredit = d.toDouble(),
             )
         }
         WeekColumn(weekStart, days)
