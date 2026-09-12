@@ -6,6 +6,7 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import com.jbarszczewski.habits.ui.calendar.CalendarScreen
 import com.jbarszczewski.habits.ui.editor.TaskEditorScreen
 import com.jbarszczewski.habits.ui.tasks.TaskListScreen
 import com.jbarszczewski.habits.ui.today.TodayScreen
@@ -18,6 +19,7 @@ import com.jbarszczewski.habits.ui.today.TodayScreen
 sealed interface Screen {
     data object Today : Screen
     data object TaskList : Screen
+    data object Calendar : Screen
 
     /**
      * [taskId] null = create a new task. [instance] makes each visit a fresh screen so its
@@ -41,12 +43,14 @@ fun HabitsApp() {
             onAddTask = { push(Screen.Editor(taskId = null)) },
             onEditTask = { push(Screen.Editor(taskId = it)) },
             onOpenTaskList = { push(Screen.TaskList) },
+            onOpenCalendar = { push(Screen.Calendar) },
         )
         Screen.TaskList -> TaskListScreen(
             onBack = ::pop,
             onAddTask = { push(Screen.Editor(taskId = null)) },
             onEditTask = { push(Screen.Editor(taskId = it)) },
         )
+        Screen.Calendar -> CalendarScreen(onBack = ::pop)
         is Screen.Editor -> TaskEditorScreen(
             taskId = screen.taskId,
             viewModelKey = "editor-${screen.instance}",
@@ -64,12 +68,14 @@ private val BackStackSaver = listSaver<SnapshotStateList<Screen>, String>(
 private fun encode(screen: Screen): String = when (screen) {
     Screen.Today -> "today"
     Screen.TaskList -> "tasks"
+    Screen.Calendar -> "calendar"
     is Screen.Editor -> "editor:${screen.taskId ?: ""}:${screen.instance}"
 }
 
 private fun decode(value: String): Screen = when {
     value == "today" -> Screen.Today
     value == "tasks" -> Screen.TaskList
+    value == "calendar" -> Screen.Calendar
     value.startsWith("editor:") -> {
         val (_, id, instance) = value.split(":")
         Screen.Editor(taskId = id.toLongOrNull(), instance = instance.toLong())
