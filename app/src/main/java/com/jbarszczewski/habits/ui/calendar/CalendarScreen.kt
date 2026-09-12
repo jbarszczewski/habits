@@ -191,19 +191,23 @@ private fun CellIntensity.toColor(primary: Color, surface: Color, secondary: Col
 }
 
 /**
- * Abbreviated month names above the week columns. A label is only rendered in the leftmost
- * column of each new month so labels never overlap.
+ * Abbreviated month names above the week columns. The label is shown in the column whose week
+ * contains the first day of that month, so it always aligns with the actual month boundary
+ * even when the 1st falls mid-week.
  */
 @Composable
 private fun MonthLabelRow(weeks: List<WeekColumn>) {
     val locale = Locale.getDefault()
     Row(horizontalArrangement = Arrangement.spacedBy(CELL_GAP)) {
-        var lastMonth = -1
+        var lastLabeledMonth = -1
         for (week in weeks) {
-            val month = week.weekStart.monthValue
-            val label = if (month != lastMonth) {
-                lastMonth = month
-                week.weekStart.month.getDisplayName(TextStyle.SHORT, locale)
+            // Find the earliest date in the week that starts a new month.
+            val newMonthDay = (0..6)
+                .map { week.weekStart.plusDays(it.toLong()) }
+                .firstOrNull { it.dayOfMonth == 1 }
+            val label = if (newMonthDay != null && newMonthDay.monthValue != lastLabeledMonth) {
+                lastLabeledMonth = newMonthDay.monthValue
+                newMonthDay.month.getDisplayName(TextStyle.SHORT, locale)
             } else {
                 ""
             }

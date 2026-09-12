@@ -137,13 +137,14 @@ class CalendarViewModel(
         val doneByTask = dayCompletions.associateBy { it.taskId }
 
         // A task counts as "scheduled" on this day if it was created on or before the date
-        // and not yet archived (or archived on a later date).
+        // and not yet archived by that day. A task archived ON date is still counted, so any
+        // same-day completion before archiving is reflected in the heatmap.
         var scheduled = 0
         var creditSum = 0.0
         for (task in tasks) {
             if (task.createdAt.isAfter(date)) continue
             val archivedAt = task.archivedAt
-            if (archivedAt != null && !archivedAt.isAfter(date)) continue
+            if (archivedAt != null && archivedAt.isBefore(date)) continue
             if (!task.isScheduledOn(date)) continue
             scheduled++
             val completion = doneByTask[task.id]
@@ -163,7 +164,8 @@ class CalendarViewModel(
 
         val intensity = when {
             scheduled == 0 -> CellIntensity.NONE
-            date == today && creditSum == 0.0 -> CellIntensity.IN_PROGRESS // scheduled but not started yet
+            // IN_PROGRESS only when no completion rows exist at all (not merely all SKIPPED).
+            date == today && dayCompletions.isEmpty() -> CellIntensity.IN_PROGRESS
             creditSum == 0.0 -> CellIntensity.MISSED
             else -> {
                 val ratio = creditSum / scheduled
