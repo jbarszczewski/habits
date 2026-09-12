@@ -115,6 +115,8 @@ object HeatmapCalculator {
             date == today && creditSum == 0.0 && hasPendingScheduledTask -> HeatmapIntensity.IN_PROGRESS
             creditSum == 0.0 -> HeatmapIntensity.MISSED
             else -> {
+                // Once any credit exists today, we show how much progress was earned so far
+                // instead of collapsing every partial day into the generic IN_PROGRESS state.
                 val ratio = creditSum / scheduled
                 when {
                     ratio <= 0.25 -> HeatmapIntensity.LOW

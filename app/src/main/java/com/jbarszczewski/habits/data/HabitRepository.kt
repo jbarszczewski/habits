@@ -210,8 +210,9 @@ class HabitRepository(
     suspend fun getCompletionsInRange(from: LocalDate, to: LocalDate): List<Completion> =
         completionDao.getBetween(from, to)
 
-    /** All tasks regardless of archived status. Used by the heatmap to compute scheduled counts. */
-    suspend fun getAllTasks(): List<Task> = taskDao.getAll()
+    /** Tasks that overlap the requested date window. Used by week / calendar history queries. */
+    suspend fun getTasksOverlappingRange(from: LocalDate, to: LocalDate): List<Task> =
+        taskDao.getOverlappingRange(from, to)
 
     // ---------------------------------------------------------------- statistics
 

@@ -45,7 +45,7 @@ class CalendarViewModel(
             val mondayThisWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             val gridStart = mondayThisWeek.minusWeeks((WEEKS_SHOWN - 1).toLong())
 
-            val tasks = repository.getAllTasks()
+            val tasks = repository.getTasksOverlappingRange(gridStart, today)
             val completions = repository.getCompletionsInRange(gridStart, today)
             val weeks = HeatmapCalculator.buildWeeks(tasks, completions, gridStart, today)
             _uiState.value = CalendarUiState(weeks, isLoading = false)

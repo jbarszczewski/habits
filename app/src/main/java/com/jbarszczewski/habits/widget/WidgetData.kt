@@ -50,7 +50,7 @@ internal fun observeWidgetData(container: AppContainer, includeWeekHistory: Bool
             val today = container.dateProvider.today()
             val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             HeatmapCalculator.buildCurrentWeek(
-                tasks = repository.getAllTasks(),
+                tasks = repository.getTasksOverlappingRange(weekStart, today),
                 completions = repository.getCompletionsInRange(weekStart, today),
                 today = today,
             )
