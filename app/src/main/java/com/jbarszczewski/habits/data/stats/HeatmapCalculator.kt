@@ -88,6 +88,7 @@ object HeatmapCalculator {
 
         var scheduled = 0
         var creditSum = 0.0
+        var hasPendingScheduledTask = false
         for (task in tasks) {
             if (task.createdAt.isAfter(date)) continue
             val archivedAt = task.archivedAt
@@ -95,6 +96,7 @@ object HeatmapCalculator {
             if (!task.isScheduledOn(date)) continue
             scheduled++
             val completion = completionByTask[task.id]
+            if (date == today && completion == null) hasPendingScheduledTask = true
             creditSum += when (completion?.status) {
                 CompletionStatus.DONE -> 1.0
                 CompletionStatus.PARTIAL -> {
@@ -108,7 +110,7 @@ object HeatmapCalculator {
 
         val intensity = when {
             scheduled == 0 -> HeatmapIntensity.NONE
-            date == today && dayCompletions.isEmpty() -> HeatmapIntensity.IN_PROGRESS
+            date == today && creditSum == 0.0 && hasPendingScheduledTask -> HeatmapIntensity.IN_PROGRESS
             creditSum == 0.0 -> HeatmapIntensity.MISSED
             else -> {
                 val ratio = creditSum / scheduled

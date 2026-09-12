@@ -71,4 +71,32 @@ class HeatmapCalculatorTest {
         assertEquals(HeatmapIntensity.HIGH, days[3]?.intensity)
         assertEquals(HeatmapIntensity.FULL, days[4]?.intensity)
     }
+
+    @Test
+    fun `today with skipped and pending tasks stays in progress`() {
+        val tasks = listOf(
+            Task(
+                id = 1,
+                name = "Drink water",
+                daysMask = DaysMask.EVERY_DAY,
+                createdAt = d("2026-09-01"),
+            ),
+            Task(
+                id = 2,
+                name = "Walk",
+                daysMask = DaysMask.EVERY_DAY,
+                createdAt = d("2026-09-01"),
+            ),
+        )
+
+        val week = HeatmapCalculator.buildCurrentWeek(
+            tasks = tasks,
+            completions = listOf(
+                Completion(taskId = 1, date = d("2026-09-10"), status = CompletionStatus.SKIPPED),
+            ),
+            today = d("2026-09-10"),
+        )
+
+        assertEquals(HeatmapIntensity.IN_PROGRESS, week.days[3]?.intensity)
+    }
 }
