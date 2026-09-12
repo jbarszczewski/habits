@@ -197,14 +197,22 @@ private fun HistoryCell(intensity: HeatmapIntensity) {
     ) {}
 }
 
-private fun HeatmapIntensity.toWidgetColor(): ColorProvider = when (this) {
-    HeatmapIntensity.NONE -> ColorProvider(Color(0xFFE7E0EC), Color(0xFF49454F))
-    HeatmapIntensity.IN_PROGRESS -> ColorProvider(Color(0x66625B71), Color(0x66CCC2DC))
-    HeatmapIntensity.MISSED -> ColorProvider(Color(0x1A6650A4), Color(0x1AD0BCFF))
-    HeatmapIntensity.LOW -> ColorProvider(Color(0x4D6650A4), Color(0x4DD0BCFF))
-    HeatmapIntensity.MEDIUM -> ColorProvider(Color(0x8C6650A4), Color(0x8CD0BCFF))
-    HeatmapIntensity.HIGH -> ColorProvider(Color(0xBF6650A4), Color(0xBFD0BCFF))
-    HeatmapIntensity.FULL -> ColorProvider(Color(0xFF6650A4), Color(0xFFD0BCFF))
+@Composable
+private fun HeatmapIntensity.toWidgetColor(): ColorProvider {
+    val context = LocalContext.current
+    val primary = GlanceTheme.colors.primary.getColor(context)
+    val surface = GlanceTheme.colors.surfaceVariant.getColor(context)
+    val secondary = GlanceTheme.colors.secondary.getColor(context)
+    val color = when (this) {
+        HeatmapIntensity.NONE -> surface
+        HeatmapIntensity.IN_PROGRESS -> secondary.copy(alpha = 0.40f)
+        HeatmapIntensity.MISSED -> primary.copy(alpha = 0.10f)
+        HeatmapIntensity.LOW -> primary.copy(alpha = 0.30f)
+        HeatmapIntensity.MEDIUM -> primary.copy(alpha = 0.55f)
+        HeatmapIntensity.HIGH -> primary.copy(alpha = 0.75f)
+        HeatmapIntensity.FULL -> primary
+    }
+    return ColorProvider(color)
 }
 
 @Composable

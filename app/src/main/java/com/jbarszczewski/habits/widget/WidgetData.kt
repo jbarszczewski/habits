@@ -28,12 +28,13 @@ internal data class WidgetData(
 internal fun observeWidgetData(container: AppContainer, includeWeekHistory: Boolean): Flow<WidgetData> {
     val dbChanges = container.database.invalidationTracker.createFlow("tasks", "completions")
     return combine(dbChanges, minuteTicker()) { _, _ ->
+        val repository = container.repository
         val today = container.dateProvider.today()
         val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val weekHistory = if (includeWeekHistory) {
             HeatmapCalculator.buildCurrentWeek(
-                tasks = container.repository.getAllTasks(),
-                completions = container.repository.getCompletionsInRange(weekStart, today),
+                tasks = repository.getAllTasks(),
+                completions = repository.getCompletionsInRange(weekStart, today),
                 today = today,
             )
         } else {
@@ -41,7 +42,7 @@ internal fun observeWidgetData(container: AppContainer, includeWeekHistory: Bool
         }
         WidgetData(
             today = today,
-            items = container.repository.observeTasksForDate(today).first(),
+            items = repository.observeTasksForDate(today).first(),
             nowMillis = container.dateProvider.nowMillis(),
             weekHistory = weekHistory,
         )
