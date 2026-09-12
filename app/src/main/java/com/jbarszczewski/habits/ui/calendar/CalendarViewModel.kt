@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jbarszczewski.habits.HabitsApplication
+import com.jbarszczewski.habits.data.Completion
 import com.jbarszczewski.habits.data.CompletionStatus
 import com.jbarszczewski.habits.data.DateProvider
 import com.jbarszczewski.habits.data.HabitRepository
@@ -104,7 +105,7 @@ class CalendarViewModel(
 
     private fun buildWeeks(
         tasks: List<Task>,
-        completionsByDate: Map<LocalDate, List<com.jbarszczewski.habits.data.Completion>>,
+        completionsByDate: Map<LocalDate, List<Completion>>,
         gridStart: LocalDate,
         today: LocalDate,
     ): List<WeekColumn> {
@@ -126,7 +127,7 @@ class CalendarViewModel(
 
     private fun buildDay(
         tasks: List<Task>,
-        completionsByDate: Map<LocalDate, List<com.jbarszczewski.habits.data.Completion>>,
+        completionsByDate: Map<LocalDate, List<Completion>>,
         date: LocalDate,
         today: LocalDate,
     ): CalendarDay {
@@ -136,7 +137,7 @@ class CalendarViewModel(
         // A task counts as "scheduled" on this day if it was created on or before the date
         // and not yet archived (or archived on a later date).
         var scheduled = 0
-        var done = 0
+        var creditSum = 0.0
         for (task in tasks) {
             if (task.createdAt.isAfter(date)) continue
             val archivedAt = task.archivedAt
@@ -144,15 +145,26 @@ class CalendarViewModel(
             if (!task.isScheduledOn(date)) continue
             scheduled++
             val completion = doneByTask[task.id]
-            if (completion?.status == CompletionStatus.DONE) done++
+            creditSum += when (completion?.status) {
+                CompletionStatus.DONE -> 1.0
+                CompletionStatus.PARTIAL -> {
+                    // Timed tasks: credit actual/target (capped at 1). Checkbox tasks cannot be
+                    // PARTIAL, so this branch is only reached for timed ones.
+                    val target = task.targetMinutes
+                    val actual = completion.actualMinutes ?: 0
+                    if (target != null && target > 0) (actual.toDouble() / target).coerceIn(0.0, 1.0)
+                    else 0.5 // fallback: treat as half credit
+                }
+                else -> 0.0
+            }
         }
 
         val intensity = when {
             scheduled == 0 -> CellIntensity.NONE
             date == today -> CellIntensity.NONE // today is still in progress; treat as unscheduled
-            done == 0 -> CellIntensity.MISSED
+            creditSum == 0.0 -> CellIntensity.MISSED
             else -> {
-                val ratio = done.toDouble() / scheduled
+                val ratio = creditSum / scheduled
                 when {
                     ratio <= 0.25 -> CellIntensity.LOW
                     ratio <= 0.50 -> CellIntensity.MEDIUM
@@ -162,7 +174,7 @@ class CalendarViewModel(
             }
         }
 
-        return CalendarDay(date, intensity, scheduled, done)
+        return CalendarDay(date, intensity, scheduled, doneCount = creditSum.toInt())
     }
 
     companion object {

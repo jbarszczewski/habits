@@ -52,6 +52,11 @@
     <string name="calendar_legend_none">None</string>
     <string name="calendar_legend_missed">Missed</string>
 
+    <string name="calendar_legend_25">25%</string>
+    <string name="calendar_legend_50">50%</string>
+    <string name="calendar_legend_75">75%</string>
+    <string name="calendar_legend_100">100%</string>
+
     <string name="widget_title">Habits for today</string>
     <string name="widget_label">Today\'s habits</string>
     <string name="widget_description">Tick off today\'s tasks and start timers from the home screen.</string>

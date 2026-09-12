@@ -231,10 +231,10 @@ private fun Legend() {
     val levels = listOf(
         CellIntensity.NONE to stringResource(R.string.calendar_legend_none),
         CellIntensity.MISSED to stringResource(R.string.calendar_legend_missed),
-        CellIntensity.LOW to "25%",
-        CellIntensity.MEDIUM to "50%",
-        CellIntensity.HIGH to "75%",
-        CellIntensity.FULL to "100%",
+        CellIntensity.LOW to stringResource(R.string.calendar_legend_25),
+        CellIntensity.MEDIUM to stringResource(R.string.calendar_legend_50),
+        CellIntensity.HIGH to stringResource(R.string.calendar_legend_75),
+        CellIntensity.FULL to stringResource(R.string.calendar_legend_100),
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
