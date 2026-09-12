@@ -24,21 +24,22 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Decode the base64-encoded keystore stored as a GitHub secret and write
-      # it back as release.jks at the repo root (where build.gradle.kts expects it).
+      # Decode the base64-encoded keystore stored as a GitHub variable (not a
+      # secret — the .jks file is already committed to the repo) and write it
+      # back as release.jks at the repo root (where build.gradle.kts expects it).
       - name: Decode release keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ vars.RELEASE_KEYSTORE_BASE64 }}
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.jks
 
-      # Create keystore.properties from individual secrets so Gradle can read
-      # the signing credentials without them ever appearing in source code.
+      # Create keystore.properties: passwords come from secrets (sensitive),
+      # alias comes from a variable (not sensitive).
       - name: Create keystore.properties
         run: |
           cat > keystore.properties <<EOF
           storeFile=../release.jks
           storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
-          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          keyAlias=${{ vars.KEYSTORE_KEY_ALIAS }}
           keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
           EOF
 
