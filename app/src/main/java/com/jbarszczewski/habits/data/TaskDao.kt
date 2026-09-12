@@ -28,8 +28,19 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getById(id: Long): Task?
 
-    @Query("SELECT * FROM tasks ORDER BY id")
-    suspend fun getAll(): List<Task>
+    /**
+     * Tasks that existed for at least one day in [from]..[to]. This keeps heatmap-style queries
+     * focused on the requested window instead of loading long-archived or not-yet-created tasks.
+     */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE created_at <= :to
+          AND (archived_at IS NULL OR archived_at >= :from)
+        ORDER BY id
+        """
+    )
+    suspend fun getOverlappingRange(from: LocalDate, to: LocalDate): List<Task>
 
     /**
      * Active tasks whose schedule includes [date]. [dayBit] must be `DaysMask.bit(date.dayOfWeek)`;

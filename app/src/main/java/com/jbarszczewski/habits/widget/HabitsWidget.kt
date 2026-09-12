@@ -41,43 +41,28 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.jbarszczewski.habits.AppContainer
 import com.jbarszczewski.habits.HabitsApplication
 import com.jbarszczewski.habits.MainActivity
 import com.jbarszczewski.habits.R
 import com.jbarszczewski.habits.data.CompletionStatus
 import com.jbarszczewski.habits.data.HabitRepository
 import com.jbarszczewski.habits.data.TaskWithCompletion
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import com.jbarszczewski.habits.data.stats.HeatmapIntensity
+import com.jbarszczewski.habits.data.stats.HeatmapWeek
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import java.time.LocalDate
-
-/** Everything one render of the widget needs. */
-private data class WidgetData(
-    val today: LocalDate,
-    val items: List<TaskWithCompletion>,
-    val nowMillis: Long,
-)
+import java.time.DayOfWeek
+import java.time.format.TextStyle as JavaTextStyle
+import java.util.Locale
 
 /**
- * The home-screen widget. Glance turns this Compose-style tree into RemoteViews, which is what
- * the launcher can display.
- *
- * Lifecycle, because it is easy to get wrong: Glance keeps a "session" open for a short while
- * after rendering. `updateAll()` on an open session only recomposes the existing content; it does
- * NOT call [provideGlance] again. So anything computed before `provideContent` would go stale.
- * The fix (and the documented pattern) is to collect a Flow *inside* `provideContent`: the widget
- * then re-renders on every database change while the session is alive, and a fresh
- * [provideGlance] runs when the next `updateAll()` opens a new session.
+ * The compact home-screen widget. Glance turns this Compose-style tree into RemoteViews, which is
+ * what the launcher can display.
  */
 class HabitsWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val container = (context.applicationContext as HabitsApplication).container
-        val dataFlow = widgetData(container)
+        val dataFlow = observeWidgetData(container, includeWeekHistory = false)
         val initial = dataFlow.first()
 
         provideContent {
@@ -87,33 +72,14 @@ class HabitsWidget : GlanceAppWidget() {
             }
         }
     }
-
-    /**
-     * Reloads on every change to the two tables and once a minute (so a running timer's minutes
-     * and the date stay current while a session is open). Each reload is one small query.
-     */
-    private fun widgetData(container: AppContainer): Flow<WidgetData> {
-        val dbChanges = container.database.invalidationTracker.createFlow("tasks", "completions")
-        return combine(dbChanges, minuteTicker()) { _, _ ->
-            val today = container.dateProvider.today()
-            WidgetData(
-                today = today,
-                items = container.repository.observeTasksForDate(today).first(),
-                nowMillis = container.dateProvider.nowMillis(),
-            )
-        }
-    }
-
-    private fun minuteTicker(): Flow<Unit> = flow {
-        while (true) {
-            emit(Unit)
-            delay(60_000)
-        }
-    }
 }
 
 @Composable
-private fun WidgetContent(items: List<TaskWithCompletion>, nowMillis: Long) {
+internal fun WidgetContent(
+    items: List<TaskWithCompletion>,
+    nowMillis: Long,
+    weekHistory: HeatmapWeek? = null,
+) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -123,14 +89,14 @@ private fun WidgetContent(items: List<TaskWithCompletion>, nowMillis: Long) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Header(items)
+        if (weekHistory != null) {
+            Spacer(GlanceModifier.height(10.dp))
+            WeekHistorySection(weekHistory)
+        }
         Spacer(GlanceModifier.height(10.dp))
         if (items.isEmpty()) {
             EmptyState()
         } else {
-            // Each item wraps its card in a Column with a trailing spacer. A vertical padding on
-            // the card itself does not reliably create a gap between rows in a Glance LazyColumn
-            // (adjacent RemoteViews list rows can end up touching), so the gap is a real Spacer
-            // between rows instead.
             LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
                 items(items, itemId = { it.task.id }) { item ->
                     Column(modifier = GlanceModifier.fillMaxWidth()) {
@@ -167,7 +133,6 @@ private fun Header(items: List<TaskWithCompletion>) {
     }
 }
 
-/** Small rounded "2/3" badge summarising today's progress at a glance. */
 @Composable
 private fun ProgressPill(done: Int, total: Int) {
     Box(
@@ -188,6 +153,60 @@ private fun ProgressPill(done: Int, total: Int) {
 }
 
 @Composable
+private fun WeekHistorySection(weekHistory: HeatmapWeek) {
+    val locale = Locale.getDefault()
+    Column(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .background(GlanceTheme.colors.surfaceVariant)
+            .cornerRadius(16.dp)
+            .clickable(actionStartActivity<MainActivity>())
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Text(
+            text = LocalContext.current.getString(R.string.widget_history_title),
+            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+        )
+        Spacer(GlanceModifier.height(8.dp))
+        Row(modifier = GlanceModifier.fillMaxWidth()) {
+            for ((index, day) in weekHistory.days.withIndex()) {
+                Column(
+                    modifier = GlanceModifier.defaultWeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = DayOfWeek.of(index + 1).getDisplayName(JavaTextStyle.NARROW, locale),
+                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 10.sp),
+                    )
+                    Spacer(GlanceModifier.height(6.dp))
+                    HistoryCell(day?.intensity ?: HeatmapIntensity.NONE)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryCell(intensity: HeatmapIntensity) {
+    Box(
+        modifier = GlanceModifier
+            .size(16.dp)
+            .background(intensity.toWidgetColor())
+            .cornerRadius(4.dp),
+    ) {}
+}
+
+private fun HeatmapIntensity.toWidgetColor(): ColorProvider = when (this) {
+    HeatmapIntensity.NONE -> ColorProvider(R.color.widget_heatmap_none)
+    HeatmapIntensity.IN_PROGRESS -> ColorProvider(R.color.widget_heatmap_in_progress)
+    HeatmapIntensity.MISSED -> ColorProvider(R.color.widget_heatmap_missed)
+    HeatmapIntensity.LOW -> ColorProvider(R.color.widget_heatmap_low)
+    HeatmapIntensity.MEDIUM -> ColorProvider(R.color.widget_heatmap_medium)
+    HeatmapIntensity.HIGH -> ColorProvider(R.color.widget_heatmap_high)
+    HeatmapIntensity.FULL -> ColorProvider(R.color.widget_heatmap_full)
+}
+
+@Composable
 private fun EmptyState() {
     Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
@@ -197,12 +216,6 @@ private fun EmptyState() {
     }
 }
 
-/**
- * A rounded "card" wrapper shared by both row kinds: tonal fill, inner padding. A fixed height
- * keeps a one-line checkbox row and a two-line timed row the same size; content is centered
- * vertically within it via the Row's [Alignment.CenterVertically]. The gap between cards is added
- * by the caller (a trailing Spacer per LazyColumn item), not by this wrapper.
- */
 @Composable
 private fun TaskCard(onClick: androidx.glance.action.Action, content: @Composable androidx.glance.layout.RowScope.() -> Unit) {
     Row(
@@ -241,7 +254,6 @@ private fun CheckboxRow(item: TaskWithCompletion) {
     }
 }
 
-/** A filled circle with a checkmark when done, or a plain ring when not: replaces the stock checkbox. */
 @Composable
 private fun StatusDot(done: Boolean) {
     if (done) {
@@ -257,8 +269,6 @@ private fun StatusDot(done: Boolean) {
             )
         }
     } else {
-        // Ring effect: an outer tinted circle with a smaller inset circle painted in the card's
-        // own background colour on top, since Glance modifiers have no direct "border" primitive.
         Box(
             modifier = GlanceModifier.size(22.dp).background(GlanceTheme.colors.outline).cornerRadius(11.dp),
             contentAlignment = Alignment.Center,
@@ -274,7 +284,6 @@ private fun TimedRow(item: TaskWithCompletion, nowMillis: Long) {
     val target = item.task.targetMinutes ?: return
     val startedAt = item.task.timerStartedAt
     val running = startedAt != null
-    // Minutes already saved today plus whatever the running timer has accumulated so far.
     val liveMinutes = (item.completion?.actualMinutes ?: 0) +
         (startedAt?.let { HabitRepository.elapsedWholeMinutes(it, nowMillis) } ?: 0)
     val progress = (liveMinutes.toFloat() / target).coerceIn(0f, 1f)
@@ -307,7 +316,6 @@ private fun TimedRow(item: TaskWithCompletion, nowMillis: Long) {
     }
 }
 
-/** Small round icon button: primary-filled play when stopped, error-tinted stop when running. */
 @Composable
 private fun TimerButton(running: Boolean, onClick: androidx.glance.action.Action) {
     val container: ColorProvider = if (running) GlanceTheme.colors.errorContainer else GlanceTheme.colors.primary
@@ -323,11 +331,10 @@ private fun TimerButton(running: Boolean, onClick: androidx.glance.action.Action
         Image(
             provider = ImageProvider(if (running) R.drawable.ic_widget_stop else R.drawable.ic_widget_play),
             contentDescription = LocalContext.current.getString(
-                if (running) R.string.widget_stop else R.string.widget_start
+                if (running) R.string.widget_stop else R.string.widget_start,
             ),
             modifier = GlanceModifier.size(16.dp),
             colorFilter = ColorFilter.tint(onContainer),
         )
     }
 }
-

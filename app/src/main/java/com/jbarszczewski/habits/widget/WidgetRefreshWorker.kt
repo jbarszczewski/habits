@@ -1,7 +1,8 @@
 package com.jbarszczewski.habits.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -18,7 +19,7 @@ import java.util.concurrent.TimeUnit
 class WidgetRefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        HabitsWidget().updateAll(applicationContext)
+        updateAllHabitWidgets(applicationContext)
         WidgetRefreshScheduler.scheduleNextDayStart(applicationContext)
         return Result.success()
     }
@@ -38,7 +39,12 @@ object WidgetRefreshScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
     }
 
-    fun cancel(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+    fun cancelIfNoWidgetsRemain(context: Context) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val compactCount = appWidgetManager.getAppWidgetIds(ComponentName(context, HabitsWidgetReceiver::class.java)).size
+        val historyCount = appWidgetManager.getAppWidgetIds(ComponentName(context, WeekHistoryWidgetReceiver::class.java)).size
+        if (compactCount == 0 && historyCount == 0) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        }
     }
 }

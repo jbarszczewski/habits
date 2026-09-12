@@ -20,7 +20,7 @@ class ToggleDoneAction : ActionCallback {
         val taskId = parameters[WidgetActionKeys.taskId] ?: return
         val repository = (context.applicationContext as HabitsApplication).container.repository
         repository.toggleDone(taskId)
-        HabitsWidget().updateAll(context)
+        updateAllHabitWidgets(context)
     }
 }
 
@@ -32,6 +32,6 @@ class ToggleTimerAction : ActionCallback {
         val task = repository.getTask(taskId) ?: return
         // Build step 5 adds the foreground service + notification around these two calls.
         if (task.timerStartedAt != null) repository.stopTimer(taskId) else repository.startTimer(taskId)
-        HabitsWidget().updateAll(context)
+        updateAllHabitWidgets(context)
     }
 }

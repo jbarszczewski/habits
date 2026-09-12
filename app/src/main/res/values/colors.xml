@@ -7,4 +7,11 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="widget_heatmap_none">#FFE7E0EC</color>
+    <color name="widget_heatmap_in_progress">#66625B71</color>
+    <color name="widget_heatmap_missed">#1A6650A4</color>
+    <color name="widget_heatmap_low">#4D6650A4</color>
+    <color name="widget_heatmap_medium">#8C6650A4</color>
+    <color name="widget_heatmap_high">#BF6650A4</color>
+    <color name="widget_heatmap_full">#FF6650A4</color>
 </resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_heatmap_none">#FF49454F</color>
+    <color name="widget_heatmap_in_progress">#66CCC2DC</color>
+    <color name="widget_heatmap_missed">#1AD0BCFF</color>
+    <color name="widget_heatmap_low">#4DD0BCFF</color>
+    <color name="widget_heatmap_medium">#8CD0BCFF</color>
+    <color name="widget_heatmap_high">#BFD0BCFF</color>
+    <color name="widget_heatmap_full">#FFD0BCFF</color>
+</resources>
