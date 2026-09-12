@@ -1,5 +1,7 @@
 package com.jbarszczewski.habits.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
@@ -35,5 +37,14 @@ object WidgetRefreshScheduler {
             .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+    }
+
+    fun cancelIfNoWidgetsRemain(context: Context) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val compactCount = appWidgetManager.getAppWidgetIds(ComponentName(context, HabitsWidgetReceiver::class.java)).size
+        val historyCount = appWidgetManager.getAppWidgetIds(ComponentName(context, WeekHistoryWidgetReceiver::class.java)).size
+        if (compactCount == 0 && historyCount == 0) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        }
     }
 }

@@ -110,11 +110,14 @@ object HeatmapCalculator {
             scheduled == 0 -> HeatmapIntensity.NONE
             date == today && dayCompletions.isEmpty() -> HeatmapIntensity.IN_PROGRESS
             creditSum == 0.0 -> HeatmapIntensity.MISSED
-            else -> when (val ratio = creditSum / scheduled) {
-                in 0.0..0.25 -> HeatmapIntensity.LOW
-                in 0.25..0.50 -> HeatmapIntensity.MEDIUM
-                in 0.50..0.75 -> HeatmapIntensity.HIGH
-                else -> HeatmapIntensity.FULL
+            else -> {
+                val ratio = creditSum / scheduled
+                when {
+                    ratio <= 0.25 -> HeatmapIntensity.LOW
+                    ratio <= 0.50 -> HeatmapIntensity.MEDIUM
+                    ratio <= 0.75 -> HeatmapIntensity.HIGH
+                    else -> HeatmapIntensity.FULL
+                }
             }
         }
 
