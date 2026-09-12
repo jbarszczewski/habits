@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -9,6 +11,15 @@ plugins {
 
 android {
     namespace = "com.jbarszczewski.habits"
+
+    // Load release signing credentials from keystore.properties (gitignored).
+    // If the file doesn't exist the build still works; release builds will
+    // fall back to the debug key so CI / local debug builds aren't broken.
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    val keystoreProps = Properties().also { props ->
+        if (keystorePropsFile.exists()) props.load(keystorePropsFile.inputStream())
+    }
+
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -25,12 +36,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // signingConfigs must be declared before buildTypes so buildTypes can reference them.
+    signingConfigs {
+        create("release") {
+            if (keystorePropsFile.exists()) {
+                // Use the stable release keystore when keystore.properties is present.
+                storeFile = rootProject.file(keystoreProps["storeFile"] as String)
+                storePassword = keystoreProps["storePassword"] as String
+                keyAlias = keystoreProps["keyAlias"] as String
+                keyPassword = keystoreProps["keyPassword"] as String
+            } else {
+                // Fall back to the debug key so the project still builds without
+                // keystore.properties (e.g. fresh checkout, CI without secrets).
+                signingConfig = signingConfigs.getByName("debug")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // No dedicated release keystore yet; sign with the debug key so
-            // CI can produce an installable APK. Swap in a real signingConfig
-            // before ever publishing this outside personal sideloading.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = false
             }

@@ -16,6 +16,7 @@
 .cxx
 local.properties
 /.claude/worktrees
+keystore.properties
 
 # environment variables
 .env
