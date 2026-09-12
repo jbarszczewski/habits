@@ -163,7 +163,8 @@ private fun WeekColumnView(week: WeekColumn) {
 private fun HeatCell(day: CalendarDay) {
     val primary = MaterialTheme.colorScheme.primary
     val surface = MaterialTheme.colorScheme.surfaceVariant
-    val cellColor = day.intensity.toColor(primary, surface)
+    val secondary = MaterialTheme.colorScheme.secondary
+    val cellColor = day.intensity.toColor(primary, surface, secondary)
 
     Box(
         modifier = Modifier
@@ -179,8 +180,9 @@ private fun HeatCell(day: CalendarDay) {
  * [primary] is the theme's primary colour (used at increasing opacity for the filled levels).
  * [surface] is used for unscheduled / empty cells.
  */
-private fun CellIntensity.toColor(primary: Color, surface: Color): Color = when (this) {
+private fun CellIntensity.toColor(primary: Color, surface: Color, secondary: Color): Color = when (this) {
     CellIntensity.NONE -> surface
+    CellIntensity.IN_PROGRESS -> secondary.copy(alpha = 0.40f)
     CellIntensity.MISSED -> primary.copy(alpha = 0.10f)
     CellIntensity.LOW -> primary.copy(alpha = 0.30f)
     CellIntensity.MEDIUM -> primary.copy(alpha = 0.55f)
@@ -227,9 +229,11 @@ private fun MonthLabelRow(weeks: List<WeekColumn>) {
 private fun Legend() {
     val primary = MaterialTheme.colorScheme.primary
     val surface = MaterialTheme.colorScheme.surfaceVariant
+    val secondary = MaterialTheme.colorScheme.secondary
 
     val levels = listOf(
         CellIntensity.NONE to stringResource(R.string.calendar_legend_none),
+        CellIntensity.IN_PROGRESS to stringResource(R.string.calendar_legend_today),
         CellIntensity.MISSED to stringResource(R.string.calendar_legend_missed),
         CellIntensity.LOW to stringResource(R.string.calendar_legend_25),
         CellIntensity.MEDIUM to stringResource(R.string.calendar_legend_50),
@@ -256,7 +260,7 @@ private fun Legend() {
                         modifier = Modifier
                             .size(CELL_SIZE)
                             .clip(CELL_SHAPE)
-                            .background(intensity.toColor(primary, surface))
+                            .background(intensity.toColor(primary, surface, secondary))
                             .border(
                                 width = 0.5.dp,
                                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),

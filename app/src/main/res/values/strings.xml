@@ -50,6 +50,7 @@
     <string name="calendar_title">Activity</string>
     <string name="calendar_legend_title">Legend</string>
     <string name="calendar_legend_none">None</string>
+    <string name="calendar_legend_today">Today</string>
     <string name="calendar_legend_missed">Missed</string>
 
     <string name="calendar_legend_25">25%</string>

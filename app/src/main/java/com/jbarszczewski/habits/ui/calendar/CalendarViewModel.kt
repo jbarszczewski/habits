@@ -24,7 +24,9 @@ import java.time.temporal.TemporalAdjusters
 enum class CellIntensity {
     /** No tasks scheduled on this day (or future day). */
     NONE,
-    /** Tasks were scheduled but none completed (all missed). */
+    /** Tasks are scheduled today but none completed yet (today is still in progress). */
+    IN_PROGRESS,
+    /** Tasks were scheduled in the past but none completed (all missed). */
     MISSED,
     /** 1–25 % of scheduled tasks completed. */
     LOW,
@@ -161,7 +163,7 @@ class CalendarViewModel(
 
         val intensity = when {
             scheduled == 0 -> CellIntensity.NONE
-            date == today -> CellIntensity.NONE // today is still in progress; treat as unscheduled
+            date == today && creditSum == 0.0 -> CellIntensity.IN_PROGRESS // scheduled but not started yet
             creditSum == 0.0 -> CellIntensity.MISSED
             else -> {
                 val ratio = creditSum / scheduled
