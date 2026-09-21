@@ -62,3 +62,4 @@ jobs:
         with:
           files: ${{ steps.apk.outputs.path }}
           generate_release_notes: true
+          overwrite_files: true
